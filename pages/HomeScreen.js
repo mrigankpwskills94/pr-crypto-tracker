@@ -18,6 +18,7 @@ const HomeScreen = () => {
     const navigation = useNavigation();
     const [masterData, setMasterData] = useState(null);
     const [selectedCurrency, setSelectedCurrency] = useState("aed");
+    const [currencyList, setCurrencyList] = useState({});
 
     const filteredData =
         masterData &&
@@ -31,7 +32,7 @@ const HomeScreen = () => {
         const retrieveCoinData = async () => {
             try {
                 const { data } = await axios.get(
-                    "https://api.coingecko.com/api/v3/coins/"
+                    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${selectedCurrency}`
                 );
                 setMasterData(data);
             } catch (ex) {
@@ -39,8 +40,20 @@ const HomeScreen = () => {
             }
         };
 
+        const retrieveCurrencyList = async () => {
+            try {
+                const { data } = await axios.get(
+                    "https://api.coingecko.com/api/v3/coins/bitcoin"
+                );
+                setCurrencyList(data.market_data.current_price);
+            } catch (ex) {
+                console.log("Currency list could not be retrieved: ", ex);
+            }
+        };
+
         retrieveCoinData();
-    }, []);
+        retrieveCurrencyList();
+    }, [selectedCurrency]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity
@@ -55,12 +68,12 @@ const HomeScreen = () => {
                 <Image
                     style={styles.coinImg}
                     source={{
-                        uri: item.image.small,
+                        uri: item.image,
                     }}
                 />
             </View>
             <Text style={styles.coinPrice}>
-                {item.market_data.current_price[selectedCurrency].toFixed(4)}
+                {item.current_price.toFixed(2)}
             </Text>
             <Text style={styles.coinName}>{item.name}</Text>
         </TouchableOpacity>
@@ -95,9 +108,10 @@ const HomeScreen = () => {
                     dropdownIconColor="white">
                     {masterData &&
                         Object.keys(
-                            masterData[0].market_data.current_price
+                            currencyList || { selectedCurrency: "1" }
                         ).map((currency) => (
                             <Picker.Item
+                                color="black"
                                 key={currency}
                                 label={currency.toUpperCase()}
                                 value={currency}
